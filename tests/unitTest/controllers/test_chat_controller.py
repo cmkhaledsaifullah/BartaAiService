@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 
 from app.controllers.chat_controller import ChatController
+from app.models.chat import ClickLogRequest
 
 
 class TestChatControllerChat:
@@ -78,3 +79,110 @@ class TestChatControllerChat:
         call_kwargs = mock_run_agent.call_args[1]
         assert len(call_kwargs["chat_history"]) == 2
         assert call_kwargs["chat_history"][0]["role"] == "user"
+
+
+SAMPLE_ARTICLE = {
+    "NewsId": "news-123",
+    "NewsPaperId": "daily_star",
+    "CategoryId": "politics",
+    "Title": "Test Article",
+    "Body": "Article body text",
+    "Tags": ["politics"],
+    "PublishDate": "2026-03-20",
+    "Author": "Reporter",
+    "SourceURL": "https://example.com/article",
+}
+
+MOCK_USER = {"email": "test@example.com"}
+
+
+class TestRecordClick:
+    def setup_method(self):
+        self.controller = ChatController()
+
+    @pytest.mark.asyncio
+    @patch("app.controllers.chat_controller.log_click", new_callable=AsyncMock)
+    @patch(
+        "app.controllers.chat_controller.get_article_by_id",
+        new_callable=AsyncMock,
+    )
+    async def test_click_by_news_id_returns_article(
+        self, mock_get_article, mock_log_click
+    ):
+        mock_get_article.return_value = SAMPLE_ARTICLE
+
+        payload = ClickLogRequest(query="politics news", news_id="news-123")
+        result = await self.controller.record_click(payload, current_user=MOCK_USER)
+
+        assert result.message == "Click logged successfully."
+        assert result.article is not None
+        assert result.article.NewsId == "news-123"
+        mock_log_click.assert_called_once_with(
+            query="politics news",
+            news_id="news-123",
+            source_url="https://example.com/article",
+        )
+
+    @pytest.mark.asyncio
+    @patch("app.controllers.chat_controller.log_click", new_callable=AsyncMock)
+    @patch(
+        "app.controllers.chat_controller.get_article_by_id",
+        new_callable=AsyncMock,
+    )
+    async def test_click_by_news_id_not_found_raises_404(
+        self, mock_get_article, mock_log_click
+    ):
+        mock_get_article.return_value = None
+
+        payload = ClickLogRequest(query="test", news_id="missing-id")
+        with pytest.raises(Exception) as exc_info:
+            await self.controller.record_click(payload, current_user=MOCK_USER)
+        assert exc_info.value.status_code == 404
+        mock_log_click.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("app.controllers.chat_controller.log_click", new_callable=AsyncMock)
+    @patch(
+        "app.controllers.chat_controller.get_article_by_source_url",
+        new_callable=AsyncMock,
+    )
+    async def test_click_by_source_url_logs_with_resolved_news_id(
+        self, mock_get_by_url, mock_log_click
+    ):
+        mock_get_by_url.return_value = SAMPLE_ARTICLE
+
+        payload = ClickLogRequest(
+            query="test query", source_url="https://example.com/article"
+        )
+        result = await self.controller.record_click(payload, current_user=MOCK_USER)
+
+        assert result.message == "Click logged successfully."
+        assert result.article is None
+        mock_log_click.assert_called_once_with(
+            query="test query",
+            news_id="news-123",
+            source_url="https://example.com/article",
+        )
+
+    @pytest.mark.asyncio
+    @patch("app.controllers.chat_controller.log_click", new_callable=AsyncMock)
+    @patch(
+        "app.controllers.chat_controller.get_article_by_source_url",
+        new_callable=AsyncMock,
+    )
+    async def test_click_by_source_url_unresolved_logs_empty_news_id(
+        self, mock_get_by_url, mock_log_click
+    ):
+        mock_get_by_url.return_value = None
+
+        payload = ClickLogRequest(
+            query="test", source_url="https://unknown.com/article"
+        )
+        result = await self.controller.record_click(payload, current_user=MOCK_USER)
+
+        assert result.message == "Click logged successfully."
+        mock_log_click.assert_called_once_with(
+            query="test",
+            news_id="",
+            source_url="https://unknown.com/article",
+        )

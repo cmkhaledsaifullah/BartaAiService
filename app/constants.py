@@ -15,6 +15,7 @@ SERVICE_ID = "barta-ai-service"
 SERVICE_DESCRIPTION = "Agentic RAG AI backend for Bangladesh news chat"
 SERVICE_VERSION = "1.0.0"
 DOCS_DISABLED_MESSAGE = "Docs disabled in production"
+API_PREFIX = "/api/v1"
 
 # ==========================================================================
 # MongoDB Collections
@@ -140,6 +141,17 @@ the available tools to search the news database.
 - For ambiguous queries, use semantic search first, then refine if needed.
 - You may call multiple tools if the query requires combining different searches.
 """
+
+# ==========================================================================
+# Click Log (Query-Article Pair Tracking)
+# ==========================================================================
+
+COLLECTION_CLICK_LOGS = "click_logs"
+MSG_CLICK_LOGGED = "Click logged successfully."
+ERROR_ARTICLE_NOT_FOUND = "Article not found."
+ERROR_CLICK_LOG_MISSING_IDENTIFIER = (
+    "Either news_id or source_url must be provided."
+)
 
 # ==========================================================================
 # Health Check

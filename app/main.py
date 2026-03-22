@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import get_settings
 from app.constants import (
+    API_PREFIX,
     ERROR_INTERNAL_SERVER,
     SERVICE_DESCRIPTION,
     SERVICE_NAME,
@@ -20,6 +21,7 @@ from app.controllers.root_controller import RootController
 from app.controllers.health_controller import HealthController
 from app.controllers.auth_controller import AuthController
 from app.controllers.chat_controller import ChatController
+from app.services.news_service import ensure_click_log_indexes
 
 # Configure logging
 settings = get_settings()
@@ -60,6 +62,7 @@ async def startup():
     logger.info("Starting Barta AI Service...")
     await connect_to_mongodb()
     await ensure_indexes()
+    await ensure_click_log_indexes()
     logger.info("Barta AI Service started successfully")
 
 
@@ -88,6 +91,6 @@ auth_controller = AuthController()
 chat_controller = ChatController()
 
 app.include_router(root_controller.router)
-app.include_router(health_controller.router, prefix="/api/v1")
-app.include_router(auth_controller.router, prefix="/api/v1")
-app.include_router(chat_controller.router, prefix="/api/v1")
+app.include_router(health_controller.router, prefix=API_PREFIX)
+app.include_router(auth_controller.router, prefix=API_PREFIX)
+app.include_router(chat_controller.router, prefix=API_PREFIX)
