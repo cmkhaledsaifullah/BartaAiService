@@ -1,0 +1,17 @@
+[coverage:run]
+source = app
+omit =
+    app/__init__.py
+    app/*/__init__.py
+
+[coverage:report]
+show_missing = true
+precision = 2
+fail_under = 0
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__
+    pass
+
+[coverage:html]
+directory = htmlcov
