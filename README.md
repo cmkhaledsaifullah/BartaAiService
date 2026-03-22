@@ -237,10 +237,37 @@ BartaAiService/
 ├── scripts/
 │   └── index_articles.py        # Batch embed existing articles
 ├── tests/
-│   ├── conftest.py              # Test fixtures
-│   ├── test_health.py           # Health & root endpoint tests
-│   ├── test_auth.py             # Auth endpoint tests
-│   └── test_chat.py             # Chat endpoint tests
+│   ├── integrationTest/         # Integration tests (API endpoint tests)
+│   │   ├── conftest.py          # Test fixtures (async client)
+│   │   ├── test_health.py       # Health & root endpoint tests
+│   │   ├── test_auth.py         # Auth endpoint tests
+│   │   └── test_chat.py         # Chat endpoint tests
+│   └── unitTest/                # Unit tests (isolated function tests)
+│       ├── agents/
+│       │   ├── test_news_agent.py
+│       │   └── test_tools.py
+│       ├── auth/
+│       │   ├── test_token.py
+│       │   └── test_middleware.py
+│       ├── controllers/
+│       │   ├── test_auth_controller.py
+│       │   ├── test_chat_controller.py
+│       │   ├── test_health_controller.py
+│       │   └── test_root_controller.py
+│       ├── database/
+│       │   ├── test_mongodb.py
+│       │   └── test_vector_store.py
+│       ├── models/
+│       │   ├── test_chat.py
+│       │   ├── test_news.py
+│       │   └── test_user.py
+│       ├── services/
+│       │   ├── test_embedding_service.py
+│       │   ├── test_llm_service.py
+│       │   └── test_news_service.py
+│       ├── test_config.py
+│       └── test_constants.py
+├── .coveragerc                  # Coverage configuration
 ├── .env.example                 # Environment variable template
 ├── requirements.txt             # Python dependencies
 ├── Dockerfile                   # Container image
@@ -251,7 +278,21 @@ BartaAiService/
 ## Testing
 
 ```bash
+# Run all tests
 pytest tests/ -v
+
+# Run only unit tests
+pytest tests/unitTest/ -v
+
+# Run only integration tests
+pytest tests/integrationTest/ -v
+
+# Run with coverage report
+pytest tests/ --cov=app --cov-report=term-missing
+
+# Generate HTML coverage report
+pytest tests/ --cov=app --cov-report=html
+# Open htmlcov/index.html in a browser to view
 ```
 
 ## React Frontend Integration
