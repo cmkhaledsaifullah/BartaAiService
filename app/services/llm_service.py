@@ -6,6 +6,7 @@ Supports multiple LLM providers configured via LLM_PROVIDER in .env:
   - anthropic  : Anthropic Claude 3.5 Sonnet / Haiku (API)
   - google     : Google Gemini 2.0 Flash / 2.5 Pro (API)
   - groq       : Groq-hosted open models like Llama 3.3 (API, fast & cheap)
+  - ollama     : Local models via Ollama (free, no API key)
 """
 
 import logging
@@ -201,6 +202,42 @@ class GroqLLMProvider(LLMProvider):
 
 
 # ---------------------------------------------------------------------------
+# Ollama provider (local, free — OpenAI-compatible API)
+# ---------------------------------------------------------------------------
+
+class OllamaLLMProvider(LLMProvider):
+    """Ollama local provider (Llama 3, Mistral, Gemma, etc. — free, no API key)."""
+
+    def __init__(self):
+        from openai import AsyncOpenAI
+
+        settings = get_settings()
+        self._client = AsyncOpenAI(
+            api_key="ollama",
+            base_url=f"{settings.ollama_base_url}/v1",
+        )
+        self._model = settings.llm_model
+
+    @property
+    def model_name(self) -> str:
+        return self._model
+
+    async def chat_completion(
+        self,
+        messages: list[dict],
+        temperature: float = 0.3,
+        max_tokens: int = 2048,
+    ) -> str:
+        response = await self._client.chat.completions.create(
+            model=self._model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content
+
+
+# ---------------------------------------------------------------------------
 # Provider factory & public API
 # ---------------------------------------------------------------------------
 
@@ -211,6 +248,7 @@ LLM_PROVIDERS = {
     "anthropic": AnthropicLLMProvider,
     "google": GoogleLLMProvider,
     "groq": GroqLLMProvider,
+    "ollama": OllamaLLMProvider,
 }
 
 

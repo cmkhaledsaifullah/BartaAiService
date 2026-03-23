@@ -64,10 +64,20 @@ def _create_langchain_llm() -> BaseChatModel:
             temperature=0.3,
             max_tokens=2048,
         )
+    elif provider == "ollama":
+        from langchain_openai import ChatOpenAI
+
+        return ChatOpenAI(
+            model=settings.llm_model,
+            api_key="ollama",
+            base_url=f"{settings.ollama_base_url}/v1",
+            temperature=0.3,
+            max_tokens=2048,
+        )
     else:
         raise ValueError(
             ERROR_UNKNOWN_LLM_PROVIDER.format(
-                provider=provider, supported="openai, anthropic, google, groq"
+                provider=provider, supported="openai, anthropic, google, groq, ollama"
             )
         )
 
