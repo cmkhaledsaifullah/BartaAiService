@@ -1,12 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.news import NewsArticle, NewsArticleResponse
+from app.models.news import StorageNewsArticle, NewsArticleResponse
 
 
-class TestNewsArticle:
+class TestStorageNewsArticle:
     def test_valid_article(self):
-        article = NewsArticle(
+        article = StorageNewsArticle(
             NewsId="n-123",
             NewsPaperId="daily_star",
             CategoryId="politics",
@@ -20,7 +20,7 @@ class TestNewsArticle:
         assert article.SourceURL == ""
 
     def test_with_all_fields(self):
-        article = NewsArticle(
+        article = StorageNewsArticle(
             NewsId="n-123",
             NewsPaperId="daily_star",
             CategoryId="politics",
@@ -36,7 +36,7 @@ class TestNewsArticle:
 
     def test_missing_required_field(self):
         with pytest.raises(ValidationError):
-            NewsArticle(
+            StorageNewsArticle(
                 NewsPaperId="daily_star",
                 CategoryId="politics",
                 Title="No NewsId",

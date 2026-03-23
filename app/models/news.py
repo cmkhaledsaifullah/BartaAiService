@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 
-class NewsArticle(BaseModel):
+class StorageNewsArticle(BaseModel):
     """Schema for a news article stored in MongoDB."""
     NewsId: str
     NewsPaperId: str
