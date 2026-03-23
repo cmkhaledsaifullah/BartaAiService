@@ -51,6 +51,13 @@ class TestCreateLangchainLlm:
         _create_langchain_llm()
         mock_chat.assert_called_once()
 
+    @patch("app.agents.news_agent.get_settings", return_value=MagicMock(
+        llm_provider="ollama", llm_model="llama3.2", ollama_base_url="http://localhost:11434"))
+    @patch("langchain_openai.ChatOpenAI")
+    def test_ollama_provider(self, mock_chat, _):
+        _create_langchain_llm()
+        mock_chat.assert_called_once()
+
     @patch("app.agents.news_agent.get_settings", return_value=MagicMock(llm_provider="unknown"))
     def test_unknown_provider_raises(self, _):
         with pytest.raises(ValueError, match="Unknown LLM provider"):

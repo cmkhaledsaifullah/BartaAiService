@@ -5,12 +5,13 @@ from functools import lru_cache
 class Settings(BaseSettings):
     # MongoDB
     mongodb_uri: str
-    mongodb_db_name: str = "barta_ai"
+    mongodb_db_name: str = "bartaAi"
+    mongodb_tls_cert_key_file: str = ""
 
     # OpenAI (required if llm_provider=openai or embedding_provider=openai)
     openai_api_key: str = ""
 
-    # LLM Provider: "openai", "anthropic", "google", or "groq"
+    # LLM Provider: "openai", "anthropic", "google", "groq", or "ollama"
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o"
 
@@ -22,6 +23,9 @@ class Settings(BaseSettings):
 
     # Groq (required only if llm_provider=groq)
     groq_api_key: str = ""
+
+    # Ollama (required only if llm_provider=ollama)
+    ollama_base_url: str = "http://localhost:11434"
 
     # Embedding Provider: "openai", "cohere", or "local"
     embedding_provider: str = "openai"

@@ -55,6 +55,16 @@ class TestLlmProviderFactory:
         assert provider is mock_instance
 
     @patch("app.services.llm_service.get_settings")
+    @patch("app.services.llm_service.OllamaLLMProvider")
+    def test_creates_ollama_provider(self, mock_cls, mock_settings):
+        mock_settings.return_value = MagicMock(llm_provider="ollama", llm_model="llama3.2")
+        mock_instance = MagicMock(model_name="llama3.2")
+        mock_cls.return_value = mock_instance
+
+        provider = get_llm_provider()
+        assert provider is mock_instance
+
+    @patch("app.services.llm_service.get_settings")
     def test_unknown_provider_raises(self, mock_settings):
         mock_settings.return_value = MagicMock(llm_provider="invalid")
         with pytest.raises(ValueError, match="Unknown LLM provider"):

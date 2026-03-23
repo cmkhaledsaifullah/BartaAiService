@@ -13,7 +13,11 @@ async def connect_to_mongodb() -> None:
     """Initialize MongoDB connection on application startup."""
     global _client, _database
     settings = get_settings()
-    _client = AsyncIOMotorClient(settings.mongodb_uri)
+    client_kwargs: dict = {}
+    if settings.mongodb_tls_cert_key_file:
+        client_kwargs["tls"] = True
+        client_kwargs["tlsCertificateKeyFile"] = settings.mongodb_tls_cert_key_file
+    _client = AsyncIOMotorClient(settings.mongodb_uri, **client_kwargs)
     _database = _client[settings.mongodb_db_name]
     # Verify connectivity
     await _client.admin.command("ping")

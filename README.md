@@ -22,7 +22,7 @@ React Frontend
 │         │  LangChain Agent        │     │
 │         │  (Pluggable LLM:       │     │
 │         │   OpenAI / Anthropic /  │     │
-│         │   Google / Groq)        │     │
+│         │   Google / Groq / Ollama)│     │
 │         └────────────┬────────────┘     │
 │                      │                   │
 │    ┌─────────────────┼────────────────┐ │
@@ -96,7 +96,7 @@ cp .env.example .env
 Edit `.env` to select providers — only provide the API key for the one you use:
 
 ```env
-# LLM: "openai", "anthropic", "google", or "groq"
+# LLM: "openai", "anthropic", "google", "groq", or "ollama"
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o
 
@@ -111,6 +111,7 @@ EMBEDDING_MODEL=text-embedding-3-small
 | `anthropic` | claude-sonnet-4-20250514, claude-3-5-haiku | $4–$25 |
 | `google` | gemini-2.0-flash, gemini-2.5-pro | $0.50–$16 |
 | `groq` | llama-3.3-70b-versatile | $1–$2 |
+| `ollama` | llama3, mistral, gemma2, phi3 | Free (local) |
 
 | Embedding Provider | Example Models | Bangla Quality | Cost |
 |-------------------|----------------|---------------|------|
@@ -118,7 +119,83 @@ EMBEDDING_MODEL=text-embedding-3-small
 | `cohere` | embed-multilingual-v3.0 (1024d) | Excellent | API paid |
 | `local` | intfloat/multilingual-e5-large (1024d) | Good | Free |
 
-### 3. Index Existing Articles
+### 3. Free Local Development (Ollama + Local Embeddings)
+
+You can run the entire stack **for free** with no API keys by using [Ollama](https://ollama.com/) for the LLM and local sentence-transformers for embeddings.
+
+#### Install & Start Ollama
+
+```bash
+# macOS
+brew install ollama
+
+# Or download from https://ollama.com/download for macOS / Linux / Windows
+```
+
+Start the Ollama server:
+
+```bash
+ollama serve
+```
+
+Pull a model (in a separate terminal):
+
+```bash
+# Recommended: lightweight and capable
+ollama pull llama3
+
+# Other good options:
+ollama pull mistral
+ollama pull gemma2
+ollama pull phi3
+```
+
+#### Configure `.env` for Free Local Setup
+
+Set these values in your `.env` file:
+
+```env
+# LLM — use Ollama (free, runs locally)
+LLM_PROVIDER=ollama
+LLM_MODEL=llama3
+OLLAMA_BASE_URL=http://localhost:11434
+
+# Embeddings — use local sentence-transformers (free, no API key)
+EMBEDDING_PROVIDER=local
+EMBEDDING_MODEL=intfloat/multilingual-e5-large
+
+# MongoDB (local via docker-compose)
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB_NAME=bartaAi
+
+# JWT (generate your own secret)
+JWT_SECRET_KEY=your-secret-key-here
+```
+
+| Local Embedding Model | Dimensions | Bangla Quality | Size |
+|-----------------------|------------|---------------|------|
+| `intfloat/multilingual-e5-large` | 1024 | Good | ~2.2 GB |
+| `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384 | Fair | ~470 MB |
+
+> **Note:** The first time you start the server with `EMBEDDING_PROVIDER=local`, the embedding model will be downloaded automatically. This may take a few minutes depending on model size and internet speed.
+
+#### Run Everything Locally
+
+```bash
+# Terminal 1 — Start Ollama
+ollama serve
+
+# Terminal 2 — Start MongoDB (via Docker)
+docker-compose up mongodb
+
+# Terminal 3 — Start the API server
+source venv/bin/activate
+uvicorn app.main:app --reload --port 8000
+```
+
+The complete stack now runs locally with **zero API costs**.
+
+### 4. Index Existing Articles
 
 If you already have news articles in MongoDB without embeddings:
 
@@ -126,7 +203,7 @@ If you already have news articles in MongoDB without embeddings:
 python -m scripts.index_articles
 ```
 
-### 4. Create MongoDB Atlas Vector Search Index
+### 5. Create MongoDB Atlas Vector Search Index
 
 In MongoDB Atlas, create a vector search index on the `news_articles` collection.
 Set `numDimensions` to match your embedding model (1536 for OpenAI, 1024 for Cohere/E5, 384 for MiniLM):
@@ -158,7 +235,7 @@ Set `numDimensions` to match your embedding model (1536 for OpenAI, 1024 for Coh
 
 Name it `news_vector_index` (or update `VECTOR_SEARCH_INDEX_NAME` in `.env`).
 
-### 5. Create MongoDB Atlas Text Search Index
+### 6. Create MongoDB Atlas Text Search Index
 
 Create a separate Atlas Search index (not Vector Search) on the `news_articles` collection
 for BM25 keyword matching. This is used by hybrid search alongside the vector index.
@@ -179,13 +256,13 @@ for BM25 keyword matching. This is used by hybrid search alongside the vector in
 
 Name it `news_text_index` (or update `TEXT_SEARCH_INDEX_NAME` in `.env`).
 
-### 6. Run the Server
+### 7. Run the Server
 
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 7. Docker (Alternative)
+### 8. Docker (Alternative)
 
 ```bash
 docker-compose up --build
@@ -316,7 +393,7 @@ BartaAiService/
 │   │   └── user.py              # User & auth schemas
 │   ├── services/
 │   │   ├── embedding_service.py # Pluggable embeddings (OpenAI/Cohere/Local)
-│   │   ├── llm_service.py       # Pluggable LLM (OpenAI/Anthropic/Google/Groq)
+│   │   ├── llm_service.py       # Pluggable LLM (OpenAI/Anthropic/Google/Groq/Ollama)
 │   │   └── news_service.py      # News article CRUD, click-log persistence
 │   ├── agents/
 │   │   ├── news_agent.py        # LangChain agentic RAG pipeline
