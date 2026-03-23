@@ -16,8 +16,8 @@ RRF_K = 60
 _RESULT_PROJECTION = {
     "_id": 0,
     "NewsId": 1,
-    "NewsPaperId": 1,
-    "CategoryId": 1,
+    "NewsPaper": 1,
+    "Category": 1,
     "Title": 1,
     "Body": 1,
     "Tags": 1,
@@ -230,8 +230,8 @@ async def ensure_indexes() -> None:
     """Ensure required database indexes exist (non-vector indexes)."""
     collection = get_collection(NEWS_COLLECTION)
     await collection.create_index("NewsId", unique=True)
-    await collection.create_index("CategoryId")
-    await collection.create_index("NewsPaperId")
+    await collection.create_index("Category")
+    await collection.create_index("NewsPaper")
     await collection.create_index("PublishDate")
     await collection.create_index("Tags")
     logger.info("Database indexes ensured for %s", NEWS_COLLECTION)

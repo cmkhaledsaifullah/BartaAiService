@@ -28,8 +28,8 @@ SAMPLE_ARTICLE = {
     "PublishDate": "2026-03-20",
     "Author": "Reporter",
     "SourceURL": "https://example.com/article",
-    "CategoryId": "politics",
-    "NewsPaperId": "daily_star",
+    "Category": "politics",
+    "NewsPaper": "daily_star",
     "Tags": ["politics"],
     "Body": "Article body text.",
 }

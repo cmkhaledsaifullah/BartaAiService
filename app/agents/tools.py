@@ -94,7 +94,7 @@ async def search_news_by_date_range(
         "PublishDate": {"$gte": start.isoformat(), "$lte": end.isoformat()}
     }
     if category_id:
-        filters["CategoryId"] = category_id
+        filters["Category"] = category_id
 
     results = await search_articles_by_filter(filters, limit=15)
     if not results:
@@ -166,8 +166,8 @@ def _format_results(articles: list[dict]) -> str:
             "published": article.get("PublishDate", "N/A"),
             "author": article.get("Author", "N/A"),
             "source_url": article.get("SourceURL", "N/A"),
-            "category": article.get("CategoryId", "N/A"),
-            "newspaper": article.get("NewsPaperId", "N/A"),
+            "category": article.get("Category", "N/A"),
+            "newspaper": article.get("NewsPaper", "N/A"),
             "tags": article.get("Tags", []),
             "body": article.get("Body", "N/A")[:2000],  # Truncate long bodies
         }

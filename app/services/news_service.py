@@ -45,9 +45,9 @@ async def get_recent_articles(
     """Get the most recent articles, optionally filtered by category or newspaper."""
     filters: dict[str, Any] = {}
     if category_id:
-        filters["CategoryId"] = category_id
+        filters["Category"] = category_id
     if newspaper_id:
-        filters["NewsPaperId"] = newspaper_id
+        filters["NewsPaper"] = newspaper_id
 
     return await search_articles_by_filter(filters, limit=limit)
 

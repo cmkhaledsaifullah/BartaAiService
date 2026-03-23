@@ -83,8 +83,8 @@ class TestChatControllerChat:
 
 SAMPLE_ARTICLE = {
     "NewsId": "news-123",
-    "NewsPaperId": "daily_star",
-    "CategoryId": "politics",
+    "NewsPaper": "daily_star",
+    "Category": "politics",
     "Title": "Test Article",
     "Body": "Article body text",
     "Tags": ["politics"],

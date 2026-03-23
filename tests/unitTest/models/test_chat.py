@@ -140,8 +140,8 @@ class TestClickLogResponse:
     def test_with_article(self):
         article = NewsArticleResponse(
             NewsId="n1",
-            NewsPaperId="ds",
-            CategoryId="politics",
+            NewsPaper="ds",
+            Category="politics",
             Title="Title",
             Body="Body",
             PublishDate="2026-03-20",

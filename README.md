@@ -142,11 +142,11 @@ Set `numDimensions` to match your embedding model (1536 for OpenAI, 1024 for Coh
     },
     {
       "type": "filter",
-      "path": "CategoryId"
+      "path": "Category"
     },
     {
       "type": "filter",
-      "path": "NewsPaperId"
+      "path": "NewsPaper"
     },
     {
       "type": "filter",
@@ -273,8 +273,8 @@ When clicked by `news_id` (returns the full article):
   "message": "Click logged successfully.",
   "article": {
     "NewsId": "unique-article-id",
-    "NewsPaperId": "daily_star",
-    "CategoryId": "politics",
+    "NewsPaper": "daily_star",
+    "Category": "politics",
     "Title": "Parliament Session Highlights",
     "Body": "Full article text...",
     "Tags": ["politics", "parliament"],
@@ -438,8 +438,8 @@ Each news article in the `news_articles` collection:
 ```json
 {
   "NewsId": "unique-id",
-  "NewsPaperId": "daily_star",
-  "CategoryId": "politics",
+  "NewsPaper": "daily_star",
+  "Category": "politics",
   "Title": "Article title",
   "Body": "Full article text...",
   "Tags": ["politics", "parliament"],

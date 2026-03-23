@@ -15,8 +15,8 @@ from app.services.news_service import (
 SAMPLE_ARTICLE = {
     "NewsId": "news-123",
     "Title": "Test Article",
-    "CategoryId": "politics",
-    "NewsPaperId": "daily_star",
+    "Category": "politics",
+    "NewsPaper": "daily_star",
     "Body": "Article body",
     "Tags": ["politics"],
     "PublishDate": "2026-03-20",
@@ -61,10 +61,10 @@ class TestSearchArticlesByFilter:
         mock_collection.find = MagicMock(return_value=mock_cursor)
         mock_get_coll.return_value = mock_collection
 
-        result = await search_articles_by_filter({"CategoryId": "politics"})
+        result = await search_articles_by_filter({"Category": "politics"})
         assert len(result) == 1
         mock_collection.find.assert_called_once_with(
-            {"CategoryId": "politics"}, {"_id": 0, "embedding": 0}
+            {"Category": "politics"}, {"_id": 0, "embedding": 0}
         )
 
     @pytest.mark.asyncio
@@ -98,14 +98,14 @@ class TestGetRecentArticles:
     async def test_with_category_filter(self, mock_search):
         mock_search.return_value = []
         await get_recent_articles(limit=10, category_id="sports")
-        mock_search.assert_called_once_with({"CategoryId": "sports"}, limit=10)
+        mock_search.assert_called_once_with({"Category": "sports"}, limit=10)
 
     @pytest.mark.asyncio
     @patch("app.services.news_service.search_articles_by_filter", new_callable=AsyncMock)
     async def test_with_newspaper_filter(self, mock_search):
         mock_search.return_value = []
         await get_recent_articles(limit=10, newspaper_id="daily_star")
-        mock_search.assert_called_once_with({"NewsPaperId": "daily_star"}, limit=10)
+        mock_search.assert_called_once_with({"NewsPaper": "daily_star"}, limit=10)
 
     @pytest.mark.asyncio
     @patch("app.services.news_service.search_articles_by_filter", new_callable=AsyncMock)
@@ -113,7 +113,7 @@ class TestGetRecentArticles:
         mock_search.return_value = []
         await get_recent_articles(limit=10, category_id="politics", newspaper_id="daily_star")
         mock_search.assert_called_once_with(
-            {"CategoryId": "politics", "NewsPaperId": "daily_star"}, limit=10
+            {"Category": "politics", "NewsPaper": "daily_star"}, limit=10
         )
 
 

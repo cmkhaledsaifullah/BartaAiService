@@ -84,9 +84,9 @@ class TestVectorSearch:
         mock_collection.aggregate = mock_aggregate
         mock_get_coll.return_value = mock_collection
 
-        pre_filter = {"CategoryId": "politics"}
+        pre_filter = {"Category": "politics"}
         await vector_search(query_embedding=[0.1] * 1536, pre_filter=pre_filter)
-        assert captured_pipeline[0]["$vectorSearch"]["filter"] == {"CategoryId": "politics"}
+        assert captured_pipeline[0]["$vectorSearch"]["filter"] == {"Category": "politics"}
 
 
 class TestEnsureIndexes:
@@ -101,8 +101,8 @@ class TestEnsureIndexes:
         assert mock_collection.create_index.call_count == 5
         index_calls = [c.args[0] for c in mock_collection.create_index.call_args_list]
         assert "NewsId" in index_calls
-        assert "CategoryId" in index_calls
-        assert "NewsPaperId" in index_calls
+        assert "Category" in index_calls
+        assert "NewsPaper" in index_calls
         assert "PublishDate" in index_calls
         assert "Tags" in index_calls
 
@@ -180,9 +180,9 @@ class TestTextSearch:
         mock_collection.aggregate = mock_aggregate
         mock_get_coll.return_value = mock_collection
 
-        await text_search(query="test", pre_filter={"CategoryId": "sports"})
+        await text_search(query="test", pre_filter={"Category": "sports"})
         match_stage = captured_pipeline[2]
-        assert match_stage == {"$match": {"CategoryId": "sports"}}
+        assert match_stage == {"$match": {"Category": "sports"}}
 
 
 class TestReciprocalRankFusion:
@@ -277,7 +277,7 @@ class TestHybridSearch:
         mock_vector.return_value = []
         mock_text.return_value = []
 
-        pre_filter = {"CategoryId": "politics"}
+        pre_filter = {"Category": "politics"}
         await hybrid_search(
             query="test",
             query_embedding=[0.1] * 10,

@@ -126,8 +126,8 @@ async def test_click_log_by_news_id_success(client):
     }
     mock_article = {
         "NewsId": "news-123",
-        "NewsPaperId": "daily_star",
-        "CategoryId": "politics",
+        "NewsPaper": "daily_star",
+        "Category": "politics",
         "Title": "Test Article",
         "Body": "Article body",
         "Tags": ["politics"],
