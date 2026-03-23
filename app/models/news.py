@@ -2,11 +2,11 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 
-class NewsArticle(BaseModel):
+class StorageNewsArticle(BaseModel):
     """Schema for a news article stored in MongoDB."""
     NewsId: str
-    NewsPaperId: str
-    CategoryId: str
+    NewsPaper: str
+    Category: str
     Title: str
     Body: str
     Tags: list[str] = Field(default_factory=list)
@@ -18,8 +18,8 @@ class NewsArticle(BaseModel):
 class NewsArticleResponse(BaseModel):
     """Schema for a news article in API responses (no embedding)."""
     NewsId: str
-    NewsPaperId: str
-    CategoryId: str
+    NewsPaper: str
+    Category: str
     Title: str
     Body: str
     Tags: list[str] = Field(default_factory=list)

@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     vector_search_num_candidates: int = 100
     vector_search_limit: int = 10
 
+    # Text Search (Atlas Search / BM25)
+    text_search_index_name: str = "news_text_index"
+
     # CORS
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
     cors_allow_credentials: bool = True

@@ -1,15 +1,15 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.news import NewsArticle, NewsArticleResponse
+from app.models.news import StorageNewsArticle, NewsArticleResponse
 
 
-class TestNewsArticle:
+class TestStorageNewsArticle:
     def test_valid_article(self):
-        article = NewsArticle(
+        article = StorageNewsArticle(
             NewsId="n-123",
-            NewsPaperId="daily_star",
-            CategoryId="politics",
+            NewsPaper="daily_star",
+            Category="politics",
             Title="Test Title",
             Body="Test body",
             PublishDate="2026-03-20",
@@ -20,10 +20,10 @@ class TestNewsArticle:
         assert article.SourceURL == ""
 
     def test_with_all_fields(self):
-        article = NewsArticle(
+        article = StorageNewsArticle(
             NewsId="n-123",
-            NewsPaperId="daily_star",
-            CategoryId="politics",
+            NewsPaper="daily_star",
+            Category="politics",
             Title="Test Title",
             Body="Test body",
             Tags=["politics", "parliament"],
@@ -36,9 +36,9 @@ class TestNewsArticle:
 
     def test_missing_required_field(self):
         with pytest.raises(ValidationError):
-            NewsArticle(
-                NewsPaperId="daily_star",
-                CategoryId="politics",
+            StorageNewsArticle(
+                NewsPaper="daily_star",
+                Category="politics",
                 Title="No NewsId",
                 Body="Body",
                 PublishDate="2026-03-20",
@@ -49,8 +49,8 @@ class TestNewsArticleResponse:
     def test_defaults(self):
         resp = NewsArticleResponse(
             NewsId="n-1",
-            NewsPaperId="ds",
-            CategoryId="politics",
+            NewsPaper="ds",
+            Category="politics",
             Title="Title",
             Body="Body",
             PublishDate="2026-03-20",
@@ -61,8 +61,8 @@ class TestNewsArticleResponse:
     def test_with_score(self):
         resp = NewsArticleResponse(
             NewsId="n-1",
-            NewsPaperId="ds",
-            CategoryId="politics",
+            NewsPaper="ds",
+            Category="politics",
             Title="Title",
             Body="Body",
             PublishDate="2026-03-20",

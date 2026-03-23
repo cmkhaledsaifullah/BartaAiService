@@ -23,7 +23,7 @@ from app.constants import (
     MSG_NO_RECENT_ARTICLES,
     MSG_NO_TAGS_PROVIDED,
 )
-from app.database.vector_store import vector_search
+from app.database.vector_store import hybrid_search
 from app.services.embedding_service import generate_embedding
 from app.services.news_service import (
     get_articles_by_tags,
@@ -39,14 +39,15 @@ async def semantic_news_search(query: str) -> str:
     """Search for Bangladesh news articles semantically related to the query.
 
     Use this tool when the user asks about a topic and you need to find
-    relevant news articles. The search uses vector embeddings for semantic
-    similarity matching.
+    relevant news articles. The search uses hybrid retrieval: vector
+    embeddings for semantic similarity combined with BM25 keyword matching,
+    merged via Reciprocal Rank Fusion for best results.
 
     Args:
         query: A natural language description of the news topic to search for.
     """
     embedding = await generate_embedding(query)
-    results = await vector_search(query_embedding=embedding)
+    results = await hybrid_search(query=query, query_embedding=embedding)
     if not results:
         return MSG_NO_ARTICLES_FOUND
     return _format_results(results)
@@ -93,7 +94,7 @@ async def search_news_by_date_range(
         "PublishDate": {"$gte": start.isoformat(), "$lte": end.isoformat()}
     }
     if category_id:
-        filters["CategoryId"] = category_id
+        filters["Category"] = category_id
 
     results = await search_articles_by_filter(filters, limit=15)
     if not results:
@@ -165,8 +166,8 @@ def _format_results(articles: list[dict]) -> str:
             "published": article.get("PublishDate", "N/A"),
             "author": article.get("Author", "N/A"),
             "source_url": article.get("SourceURL", "N/A"),
-            "category": article.get("CategoryId", "N/A"),
-            "newspaper": article.get("NewsPaperId", "N/A"),
+            "category": article.get("Category", "N/A"),
+            "newspaper": article.get("NewsPaper", "N/A"),
             "tags": article.get("Tags", []),
             "body": article.get("Body", "N/A")[:2000],  # Truncate long bodies
         }

@@ -280,7 +280,7 @@ def _format_articles_as_context(articles: list[dict]) -> str:
             f"Published: {article.get('PublishDate', 'N/A')}\n"
             f"Author: {article.get('Author', 'N/A')}\n"
             f"Source: {article.get('SourceURL', 'N/A')}\n"
-            f"Category: {article.get('CategoryId', 'N/A')}\n"
+            f"Category: {article.get('Category', 'N/A')}\n"
             f"Tags: {', '.join(article.get('Tags', []))}\n"
             f"Content:\n{article.get('Body', 'N/A')}\n"
         )

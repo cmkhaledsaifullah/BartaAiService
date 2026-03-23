@@ -28,8 +28,8 @@ SAMPLE_ARTICLE = {
     "PublishDate": "2026-03-20",
     "Author": "Reporter",
     "SourceURL": "https://example.com/article",
-    "CategoryId": "politics",
-    "NewsPaperId": "daily_star",
+    "Category": "politics",
+    "NewsPaper": "daily_star",
     "Tags": ["politics"],
     "Body": "Article body text.",
 }
@@ -69,7 +69,7 @@ class TestFormatResults:
 
 class TestSemanticNewsSearch:
     @pytest.mark.asyncio
-    @patch("app.agents.tools.vector_search", new_callable=AsyncMock, return_value=[SAMPLE_ARTICLE])
+    @patch("app.agents.tools.hybrid_search", new_callable=AsyncMock, return_value=[SAMPLE_ARTICLE])
     @patch("app.agents.tools.generate_embedding", new_callable=AsyncMock, return_value=[0.1] * 1536)
     async def test_returns_results(self, _mock_embed, _mock_search):
         result = await semantic_news_search.ainvoke({"query": "politics"})
@@ -78,7 +78,7 @@ class TestSemanticNewsSearch:
         assert parsed[0]["title"] == "Test Article"
 
     @pytest.mark.asyncio
-    @patch("app.agents.tools.vector_search", new_callable=AsyncMock, return_value=[])
+    @patch("app.agents.tools.hybrid_search", new_callable=AsyncMock, return_value=[])
     @patch("app.agents.tools.generate_embedding", new_callable=AsyncMock, return_value=[0.1] * 1536)
     async def test_no_results(self, _mock_embed, _mock_search):
         result = await semantic_news_search.ainvoke({"query": "nothing"})

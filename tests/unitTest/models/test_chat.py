@@ -1,7 +1,16 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.chat import ChatMessage, ChatRequest, ChatResponse, SourceReference, ToolCall
+from app.models.chat import (
+    ChatMessage,
+    ChatRequest,
+    ChatResponse,
+    ClickLogRequest,
+    ClickLogResponse,
+    SourceReference,
+    ToolCall,
+)
+from app.models.news import NewsArticleResponse
 
 
 class TestChatMessage:
@@ -88,3 +97,54 @@ class TestChatResponse:
         )
         assert len(resp.sources) == 1
         assert resp.session_id == "s1"
+
+
+class TestClickLogRequest:
+    def test_valid_with_news_id(self):
+        req = ClickLogRequest(query="latest politics", news_id="news-123")
+        assert req.query == "latest politics"
+        assert req.news_id == "news-123"
+        assert req.source_url is None
+
+    def test_valid_with_source_url(self):
+        req = ClickLogRequest(
+            query="flood news", source_url="https://example.com/article"
+        )
+        assert req.source_url == "https://example.com/article"
+        assert req.news_id is None
+
+    def test_valid_with_both(self):
+        req = ClickLogRequest(
+            query="test",
+            news_id="news-1",
+            source_url="https://example.com/a",
+        )
+        assert req.news_id == "news-1"
+        assert req.source_url == "https://example.com/a"
+
+    def test_rejects_missing_both_identifiers(self):
+        with pytest.raises(ValueError, match="Either news_id or source_url"):
+            ClickLogRequest(query="test")
+
+    def test_rejects_empty_query(self):
+        with pytest.raises(ValueError):
+            ClickLogRequest(query="", news_id="news-1")
+
+
+class TestClickLogResponse:
+    def test_without_article(self):
+        resp = ClickLogResponse(message="ok")
+        assert resp.message == "ok"
+        assert resp.article is None
+
+    def test_with_article(self):
+        article = NewsArticleResponse(
+            NewsId="n1",
+            NewsPaper="ds",
+            Category="politics",
+            Title="Title",
+            Body="Body",
+            PublishDate="2026-03-20",
+        )
+        resp = ClickLogResponse(message="ok", article=article)
+        assert resp.article.NewsId == "n1"

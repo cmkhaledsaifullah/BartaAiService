@@ -14,7 +14,10 @@ React Frontend
 │  │  Auth     │ │   Chat    │ │ Health │ │
 │  │Controller │ │Controller │ │Contrlr │ │
 │  └──────────┘ └─────┬─────┘ └────────┘ │
-│                      │                   │
+│                      │        ┌────────┐│
+│                      │        │ClickLog││
+│                      │        │Contrlr ││
+│                      │        └────────┘│
 │         ┌────────────▼────────────┐     │
 │         │  LangChain Agent        │     │
 │         │  (Pluggable LLM:       │     │
@@ -25,14 +28,20 @@ React Frontend
 │    ┌─────────────────┼────────────────┐ │
 │    │                 │                │ │
 │  ┌─▼──────┐  ┌──────▼─────┐  ┌──────▼┐│
-│  │Semantic │  │  Filter    │  │Latest ││
-│  │Search   │  │  by Date/  │  │ News  ││
-│  │(Vector) │  │  Category  │  │       ││
-│  └────┬────┘  └──────┬─────┘  └───┬──┘│
-│       └──────────────┼─────────────┘   │
-│                      ▼                  │
+│  │Hybrid  │  │  Filter    │  │Latest ││
+│  │Search  │  │  by Date/  │  │ News  ││
+│  │(BM25 + │  │  Category  │  │       ││
+│  │Vector) │  └──────┬─────┘  └───┬──┘│
+│  └────┬────┘        │            │    │
+│       │  ┌──────────┘────────────┘    │
+│       │  │   Reciprocal Rank Fusion   │
+│       └──┼────────────┐               │
+│          ▼            ▼               │
 │    ┌──────────────────────────────┐    │
-│    │  MongoDB + Vector Search     │    │
+│    │  MongoDB Atlas               │    │
+│    │  • Vector Search (HNSW)     │    │
+│    │  • Text Search (BM25)       │    │
+│    │  • Click Logs (training)    │    │
 │    │  (Pluggable Embeddings:     │    │
 │    │   OpenAI / Cohere / Local)  │    │
 │    └──────────────────────────────┘    │
@@ -41,11 +50,14 @@ React Frontend
 
 ## Features
 
+- **Hybrid Search**: Combines vector (semantic) and BM25 (keyword) retrieval with Reciprocal Rank Fusion (RRF) for best-of-both-worlds results
 - **Agentic RAG**: LangChain agent decides which retrieval tools to use based on the query
 - **Pluggable LLM**: Switch between OpenAI, Anthropic, Google Gemini, or Groq via `.env`
 - **Pluggable Embeddings**: Choose OpenAI, Cohere (excellent Bangla), or free local models via `.env`
 - **Semantic Search**: MongoDB Atlas Vector Search with configurable embedding models
+- **BM25 Text Search**: MongoDB Atlas Search for keyword matching (exact names, entities, phrases)
 - **Multi-tool Retrieval**: Search by topic, category, date range, tags, newspaper
+- **Click-Log Tracking**: Logs query-article click pairs for future self-supervised embedding model training
 - **JWT Authentication**: Secure token-based API access
 - **Safety Guardrails**: Grounded responses, no fabrication, PII protection, content neutrality
 - **Bilingual**: Supports both Bangla and English queries
@@ -130,11 +142,11 @@ Set `numDimensions` to match your embedding model (1536 for OpenAI, 1024 for Coh
     },
     {
       "type": "filter",
-      "path": "CategoryId"
+      "path": "Category"
     },
     {
       "type": "filter",
-      "path": "NewsPaperId"
+      "path": "NewsPaper"
     },
     {
       "type": "filter",
@@ -146,13 +158,34 @@ Set `numDimensions` to match your embedding model (1536 for OpenAI, 1024 for Coh
 
 Name it `news_vector_index` (or update `VECTOR_SEARCH_INDEX_NAME` in `.env`).
 
-### 5. Run the Server
+### 5. Create MongoDB Atlas Text Search Index
+
+Create a separate Atlas Search index (not Vector Search) on the `news_articles` collection
+for BM25 keyword matching. This is used by hybrid search alongside the vector index.
+
+```json
+{
+  "name": "news_text_index",
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "Title": { "type": "string", "analyzer": "lucene.standard" },
+      "Body": { "type": "string", "analyzer": "lucene.standard" },
+      "Tags": { "type": "string", "analyzer": "lucene.standard" }
+    }
+  }
+}
+```
+
+Name it `news_text_index` (or update `TEXT_SEARCH_INDEX_NAME` in `.env`).
+
+### 6. Run the Server
 
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 6. Docker (Alternative)
+### 7. Docker (Alternative)
 
 ```bash
 docker-compose up --build
@@ -167,6 +200,7 @@ docker-compose up --build
 | `POST` | `/api/v1/auth/register` | No | Register a new user |
 | `POST` | `/api/v1/auth/login` | No | Login and get JWT token |
 | `POST` | `/api/v1/chat` | Yes | Send a message to the AI agent |
+| `POST` | `/api/v1/chat/click-log` | Yes | Log query-article click pair |
 
 ### Chat Request Example
 
@@ -204,6 +238,62 @@ curl -X POST http://localhost:8000/api/v1/chat \
 }
 ```
 
+### Click-Log Request Example
+
+When a user clicks on an article from the search results:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/chat/click-log \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "latest political news Bangladesh",
+    "news_id": "unique-article-id"
+  }'
+```
+
+Or when the user clicks a source URL:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/chat/click-log \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "latest political news Bangladesh",
+    "source_url": "https://example.com/article-1"
+  }'
+```
+
+### Click-Log Response Example
+
+When clicked by `news_id` (returns the full article):
+
+```json
+{
+  "message": "Click logged successfully.",
+  "article": {
+    "NewsId": "unique-article-id",
+    "NewsPaper": "daily_star",
+    "Category": "politics",
+    "Title": "Parliament Session Highlights",
+    "Body": "Full article text...",
+    "Tags": ["politics", "parliament"],
+    "PublishDate": "2026-03-20",
+    "Author": "Reporter Name",
+    "SourceURL": "https://example.com/article-1"
+  }
+}
+```
+
+When clicked by `source_url` (logs only, no article returned):
+
+```json
+{
+  "message": "Click logged successfully.",
+  "article": null
+}
+```
+
 ## Project Structure
 
 ```
@@ -219,21 +309,21 @@ BartaAiService/
 │   │   ├── root_controller.py   # GET / — service info
 │   │   ├── health_controller.py # GET /health — health check
 │   │   ├── auth_controller.py   # POST /auth/register, /auth/login
-│   │   └── chat_controller.py   # POST /chat — AI chat (authenticated)
+│   │   └── chat_controller.py   # POST /chat, /chat/click-log
 │   ├── models/
 │   │   ├── news.py              # News article schemas
-│   │   ├── chat.py              # Chat request/response schemas
+│   │   ├── chat.py              # Chat & click-log request/response schemas
 │   │   └── user.py              # User & auth schemas
 │   ├── services/
 │   │   ├── embedding_service.py # Pluggable embeddings (OpenAI/Cohere/Local)
 │   │   ├── llm_service.py       # Pluggable LLM (OpenAI/Anthropic/Google/Groq)
-│   │   └── news_service.py      # News article CRUD queries
+│   │   └── news_service.py      # News article CRUD, click-log persistence
 │   ├── agents/
 │   │   ├── news_agent.py        # LangChain agentic RAG pipeline
 │   │   └── tools.py             # Agent tools (search, filter, etc.)
 │   └── database/
 │       ├── mongodb.py           # MongoDB async connection management
-│       └── vector_store.py      # Vector search operations
+│       └── vector_store.py      # Vector search, text search, hybrid search & RRF
 ├── scripts/
 │   └── index_articles.py        # Batch embed existing articles
 ├── tests/
@@ -323,6 +413,22 @@ export async function chat(token: string, message: string, history: Array<{role:
   });
   return res.json(); // { answer, sources, tool_calls, session_id }
 }
+
+export async function logClick(token: string, query: string, newsId?: string, sourceUrl?: string) {
+  const body: Record<string, string> = { query };
+  if (newsId) body.news_id = newsId;
+  if (sourceUrl) body.source_url = sourceUrl;
+
+  const res = await fetch(`${API_BASE}/chat/click-log`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  return res.json(); // { message, article? }
+}
 ```
 
 ## MongoDB Document Schema
@@ -332,8 +438,8 @@ Each news article in the `news_articles` collection:
 ```json
 {
   "NewsId": "unique-id",
-  "NewsPaperId": "daily_star",
-  "CategoryId": "politics",
+  "NewsPaper": "daily_star",
+  "Category": "politics",
   "Title": "Article title",
   "Body": "Full article text...",
   "Tags": ["politics", "parliament"],
@@ -341,6 +447,17 @@ Each news article in the `news_articles` collection:
   "Author": "Reporter Name",
   "SourceURL": "https://example.com/article",
   "embedding": [0.012, -0.034, ...]  // auto-generated, dimensions depend on model
+}
+```
+
+Each click log in the `click_logs` collection (used for self-supervised training data):
+
+```json
+{
+  "query": "latest political news Bangladesh",
+  "news_id": "unique-article-id",
+  "source_url": "https://example.com/article",
+  "clicked_at": "2026-03-20T10:30:00+00:00"
 }
 ```
 

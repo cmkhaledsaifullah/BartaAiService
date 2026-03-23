@@ -80,7 +80,7 @@ class TestFormatArticlesAsContext:
             "PublishDate": "2026-03-20",
             "Author": "Reporter",
             "SourceURL": "https://example.com",
-            "CategoryId": "politics",
+            "Category": "politics",
             "Tags": ["politics", "parliament"],
             "Body": "Article body.",
             "score": 0.95,
