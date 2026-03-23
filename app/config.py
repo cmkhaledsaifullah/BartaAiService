@@ -5,7 +5,8 @@ from functools import lru_cache
 class Settings(BaseSettings):
     # MongoDB
     mongodb_uri: str
-    mongodb_db_name: str = "barta_ai"
+    mongodb_db_name: str = "bartaAi"
+    mongodb_tls_cert_key_file: str = ""
 
     # OpenAI (required if llm_provider=openai or embedding_provider=openai)
     openai_api_key: str = ""
