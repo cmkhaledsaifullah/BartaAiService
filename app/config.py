@@ -1,3 +1,5 @@
+import os
+
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -62,7 +64,10 @@ class Settings(BaseSettings):
     app_debug: bool = False
     log_level: str = "INFO"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": os.getenv("ENV_FILE", ".env"),
+        "env_file_encoding": "utf-8",
+    }
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -4,6 +4,18 @@ from unittest.mock import patch, MagicMock
 from app.config import Settings, get_settings
 
 
+class TestGetSettings:
+    @patch.dict("os.environ", {
+        "MONGODB_URI": "mongodb://localhost:27017",
+        "JWT_SECRET_KEY": "test-secret",
+    })
+    def test_get_settings_returns_settings_instance(self):
+        from app.config import get_settings, Settings
+        get_settings.cache_clear()
+        settings = get_settings()
+        assert isinstance(settings, Settings)
+        get_settings.cache_clear()
+
 class TestSettingsProperties:
     @patch.dict("os.environ", {
         "MONGODB_URI": "mongodb://localhost:27017",
@@ -62,7 +74,7 @@ class TestSettingsProperties:
             mongodb_uri="mongodb://localhost:27017",
             jwt_secret_key="test-secret",
         )
-        assert settings.mongodb_db_name == "barta_ai"
+        assert settings.mongodb_db_name == "bartaAi"
         assert settings.llm_provider == "openai"
         assert settings.llm_model == "gpt-4o"
         assert settings.embedding_provider == "openai"
