@@ -444,23 +444,61 @@ BartaAiService/
 
 ## Testing
 
-```bash
-# Run all tests
-pytest tests/ -v
+All tests are fully mocked — no running database, LLM, or external services required.
 
-# Run only unit tests
+### Prerequisites
+
+```bash
+# Activate virtual environment
+source venv/bin/activate  # macOS/Linux
+```
+
+### Unit Tests
+
+Unit tests cover individual functions and classes in isolation. No environment file is needed — required env vars are mocked per-test.
+
+```bash
+# Run unit tests
 pytest tests/unitTest/ -v
 
-# Run only integration tests
-pytest tests/integrationTest/ -v
-
 # Run with coverage report
-pytest tests/ --cov=app --cov-report=term-missing
+pytest tests/unitTest/ --cov=app --cov-report=term-missing
+
+# Run a specific test file
+pytest tests/unitTest/services/test_llm_service.py -v
+```
+
+### Integration Tests
+
+Integration tests exercise full API endpoints via an async HTTP client. They require environment variables from `.env.e2e` (committed to the repo).
+
+```bash
+# Run integration tests (point to .env.e2e via ENV_FILE)
+ENV_FILE=.env.e2e pytest tests/integrationTest/ -v
+
+# Run with coverage
+ENV_FILE=.env.e2e pytest tests/integrationTest/ --cov=app --cov-report=term-missing
+```
+
+> **Note:** The `ENV_FILE` environment variable tells the app which `.env` file to load. This avoids copying/deleting files and works on any OS.
+
+### Run All Tests
+
+```bash
+# Unit + integration together
+ENV_FILE=.env.e2e pytest tests/ -v
+
+# Full coverage report
+ENV_FILE=.env.e2e pytest tests/ --cov=app --cov-report=term-missing
 
 # Generate HTML coverage report
-pytest tests/ --cov=app --cov-report=html
+ENV_FILE=.env.e2e pytest tests/ --cov=app --cov-report=html
 # Open htmlcov/index.html in a browser to view
 ```
+
+### Coverage Threshold
+
+Coverage is configured in `.coveragerc` with a minimum threshold of **95%**. The CI pipeline enforces this on every push and pull request.
 
 ## React Frontend Integration
 

@@ -312,8 +312,9 @@ def _format_articles_as_context(articles: list[dict]) -> str:
     parts = []
     for i, article in enumerate(articles, 1):
         relevance = article.get("score", "N/A")
+        relevance_str = f"{relevance:.4f}" if isinstance(relevance, (int, float)) else str(relevance)
         parts.append(
-            f"[Article {i}] (Relevance: {relevance:.4f})\n"
+            f"[Article {i}] (Relevance: {relevance_str})\n"
             f"Title: {article.get('Title', 'N/A')}\n"
             f"Published: {article.get('PublishDate', 'N/A')}\n"
             f"Author: {article.get('Author', 'N/A')}\n"

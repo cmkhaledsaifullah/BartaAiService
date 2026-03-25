@@ -117,6 +117,17 @@ class TestSearchNewsByDateRange:
         assert len(parsed) == 1
 
     @pytest.mark.asyncio
+    @patch("app.agents.tools.search_articles_by_filter", new_callable=AsyncMock, return_value=[SAMPLE_ARTICLE])
+    async def test_valid_dates_with_category(self, mock_filter):
+        result = await search_news_by_date_range.ainvoke({
+            "start_date": "2026-03-01", "end_date": "2026-03-20", "category_id": "politics"
+        })
+        parsed = json.loads(result)
+        assert len(parsed) == 1
+        call_args = mock_filter.call_args
+        assert "Category" in call_args[0][0]
+
+    @pytest.mark.asyncio
     async def test_invalid_date_format(self):
         result = await search_news_by_date_range.ainvoke({
             "start_date": "invalid", "end_date": "2026-03-20"

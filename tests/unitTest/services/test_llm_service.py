@@ -1,11 +1,16 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 
 from app.services.llm_service import (
     get_llm_provider,
     chat_completion,
     _format_articles_as_context,
     LLM_PROVIDERS,
+    OpenAILLMProvider,
+    AnthropicLLMProvider,
+    GoogleLLMProvider,
+    GroqLLMProvider,
+    OllamaLLMProvider,
 )
 import app.services.llm_service as llm_module
 
@@ -15,53 +20,43 @@ class TestLlmProviderFactory:
         llm_module._provider = None
 
     @patch("app.services.llm_service.get_settings")
-    @patch("app.services.llm_service.OpenAILLMProvider")
-    def test_creates_openai_provider(self, mock_cls, mock_settings):
+    def test_creates_openai_provider(self, mock_settings):
         mock_settings.return_value = MagicMock(llm_provider="openai", llm_model="gpt-4o")
         mock_instance = MagicMock(model_name="gpt-4o")
-        mock_cls.return_value = mock_instance
-
-        provider = get_llm_provider()
+        with patch.dict(LLM_PROVIDERS, {"openai": lambda: mock_instance}):
+            provider = get_llm_provider()
         assert provider is mock_instance
 
     @patch("app.services.llm_service.get_settings")
-    @patch("app.services.llm_service.AnthropicLLMProvider")
-    def test_creates_anthropic_provider(self, mock_cls, mock_settings):
+    def test_creates_anthropic_provider(self, mock_settings):
         mock_settings.return_value = MagicMock(llm_provider="anthropic", llm_model="claude-sonnet-4-20250514")
         mock_instance = MagicMock(model_name="claude-sonnet-4-20250514")
-        mock_cls.return_value = mock_instance
-
-        provider = get_llm_provider()
+        with patch.dict(LLM_PROVIDERS, {"anthropic": lambda: mock_instance}):
+            provider = get_llm_provider()
         assert provider is mock_instance
 
     @patch("app.services.llm_service.get_settings")
-    @patch("app.services.llm_service.GoogleLLMProvider")
-    def test_creates_google_provider(self, mock_cls, mock_settings):
+    def test_creates_google_provider(self, mock_settings):
         mock_settings.return_value = MagicMock(llm_provider="google", llm_model="gemini-2.0-flash")
         mock_instance = MagicMock(model_name="gemini-2.0-flash")
-        mock_cls.return_value = mock_instance
-
-        provider = get_llm_provider()
+        with patch.dict(LLM_PROVIDERS, {"google": lambda: mock_instance}):
+            provider = get_llm_provider()
         assert provider is mock_instance
 
     @patch("app.services.llm_service.get_settings")
-    @patch("app.services.llm_service.GroqLLMProvider")
-    def test_creates_groq_provider(self, mock_cls, mock_settings):
+    def test_creates_groq_provider(self, mock_settings):
         mock_settings.return_value = MagicMock(llm_provider="groq", llm_model="llama-3.3-70b")
         mock_instance = MagicMock(model_name="llama-3.3-70b")
-        mock_cls.return_value = mock_instance
-
-        provider = get_llm_provider()
+        with patch.dict(LLM_PROVIDERS, {"groq": lambda: mock_instance}):
+            provider = get_llm_provider()
         assert provider is mock_instance
 
     @patch("app.services.llm_service.get_settings")
-    @patch("app.services.llm_service.OllamaLLMProvider")
-    def test_creates_ollama_provider(self, mock_cls, mock_settings):
+    def test_creates_ollama_provider(self, mock_settings):
         mock_settings.return_value = MagicMock(llm_provider="ollama", llm_model="llama3.2")
         mock_instance = MagicMock(model_name="llama3.2")
-        mock_cls.return_value = mock_instance
-
-        provider = get_llm_provider()
+        with patch.dict(LLM_PROVIDERS, {"ollama": lambda: mock_instance}):
+            provider = get_llm_provider()
         assert provider is mock_instance
 
     @patch("app.services.llm_service.get_settings")
@@ -71,16 +66,16 @@ class TestLlmProviderFactory:
             get_llm_provider()
 
     @patch("app.services.llm_service.get_settings")
-    @patch("app.services.llm_service.OpenAILLMProvider")
-    def test_singleton(self, mock_cls, mock_settings):
+    def test_singleton(self, mock_settings):
         mock_settings.return_value = MagicMock(llm_provider="openai", llm_model="gpt-4o")
+        mock_factory = MagicMock()
         mock_instance = MagicMock(model_name="gpt-4o")
-        mock_cls.return_value = mock_instance
-
-        p1 = get_llm_provider()
-        p2 = get_llm_provider()
+        mock_factory.return_value = mock_instance
+        with patch.dict(LLM_PROVIDERS, {"openai": mock_factory}):
+            p1 = get_llm_provider()
+            p2 = get_llm_provider()
         assert p1 is p2
-        assert mock_cls.call_count == 1
+        assert mock_factory.call_count == 1
 
 
 class TestFormatArticlesAsContext:
@@ -166,4 +161,201 @@ class TestLlmProvidersRegistry:
         assert "anthropic" in LLM_PROVIDERS
         assert "google" in LLM_PROVIDERS
         assert "groq" in LLM_PROVIDERS
-        assert len(LLM_PROVIDERS) == 4
+        assert "ollama" in LLM_PROVIDERS
+        assert len(LLM_PROVIDERS) == 5
+
+
+class TestOpenAILLMProviderInit:
+    @patch("app.services.llm_service.get_settings")
+    @patch("openai.AsyncOpenAI")
+    def test_constructor(self, mock_openai_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            openai_api_key="test-key", llm_model="gpt-4o"
+        )
+        provider = OpenAILLMProvider()
+        assert provider.model_name == "gpt-4o"
+
+    @pytest.mark.asyncio
+    @patch("app.services.llm_service.get_settings")
+    @patch("openai.AsyncOpenAI")
+    async def test_chat_completion(self, mock_openai_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            openai_api_key="test-key", llm_model="gpt-4o"
+        )
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Hello!"))]
+
+        import asyncio
+        future = asyncio.Future()
+        future.set_result(mock_response)
+        mock_client.chat.completions.create.return_value = future
+
+        provider = OpenAILLMProvider()
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "hi"}]
+        )
+        assert result == "Hello!"
+
+
+class TestAnthropicLLMProviderInit:
+    @patch("app.services.llm_service.get_settings")
+    @patch("anthropic.AsyncAnthropic")
+    def test_constructor(self, mock_anthropic_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            anthropic_api_key="test-key", llm_model="claude-sonnet-4-20250514"
+        )
+        provider = AnthropicLLMProvider()
+        assert provider.model_name == "claude-sonnet-4-20250514"
+
+    @pytest.mark.asyncio
+    @patch("app.services.llm_service.get_settings")
+    @patch("anthropic.AsyncAnthropic")
+    async def test_chat_completion(self, mock_anthropic_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            anthropic_api_key="test-key", llm_model="claude-sonnet-4-20250514"
+        )
+        mock_client = MagicMock()
+        mock_anthropic_cls.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(text="Anthropic response")]
+
+        import asyncio
+        future = asyncio.Future()
+        future.set_result(mock_response)
+        mock_client.messages.create.return_value = future
+
+        provider = AnthropicLLMProvider()
+        result = await provider.chat_completion(
+            messages=[
+                {"role": "system", "content": "You are helpful."},
+                {"role": "user", "content": "hi"},
+            ]
+        )
+        assert result == "Anthropic response"
+
+
+class TestGoogleLLMProviderInit:
+    @patch("app.services.llm_service.get_settings")
+    def test_constructor(self, mock_settings):
+        mock_settings.return_value = MagicMock(
+            google_api_key="test-key", llm_model="gemini-2.0-flash"
+        )
+        import sys
+        mock_genai = MagicMock()
+        sys.modules["google.genai"] = mock_genai
+        try:
+            provider = GoogleLLMProvider()
+            assert provider.model_name == "gemini-2.0-flash"
+        finally:
+            del sys.modules["google.genai"]
+
+    @pytest.mark.asyncio
+    @patch("app.services.llm_service.get_settings")
+    async def test_chat_completion(self, mock_settings):
+        mock_settings.return_value = MagicMock(
+            google_api_key="test-key", llm_model="gemini-2.0-flash"
+        )
+        import sys
+        mock_genai = MagicMock()
+        sys.modules["google.genai"] = mock_genai
+        mock_types = MagicMock()
+        sys.modules["google.genai.types"] = mock_types
+
+        try:
+            mock_client = MagicMock()
+            mock_genai.Client.return_value = mock_client
+
+            mock_response = MagicMock(text="Google response")
+            import asyncio
+            future = asyncio.Future()
+            future.set_result(mock_response)
+            mock_client.aio.models.generate_content.return_value = future
+
+            provider = GoogleLLMProvider()
+            provider._client = mock_client
+
+            result = await provider.chat_completion(
+                messages=[
+                    {"role": "system", "content": "System msg"},
+                    {"role": "user", "content": "hi"},
+                    {"role": "assistant", "content": "prev"},
+                ]
+            )
+            assert result == "Google response"
+        finally:
+            del sys.modules["google.genai"]
+            del sys.modules["google.genai.types"]
+
+
+class TestGroqLLMProviderInit:
+    @patch("app.services.llm_service.get_settings")
+    @patch("openai.AsyncOpenAI")
+    def test_constructor(self, mock_openai_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            groq_api_key="test-key", llm_model="llama-3.3-70b-versatile"
+        )
+        provider = GroqLLMProvider()
+        assert provider.model_name == "llama-3.3-70b-versatile"
+
+    @pytest.mark.asyncio
+    @patch("app.services.llm_service.get_settings")
+    @patch("openai.AsyncOpenAI")
+    async def test_chat_completion(self, mock_openai_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            groq_api_key="test-key", llm_model="llama-3.3-70b-versatile"
+        )
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Groq response"))]
+
+        import asyncio
+        future = asyncio.Future()
+        future.set_result(mock_response)
+        mock_client.chat.completions.create.return_value = future
+
+        provider = GroqLLMProvider()
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "hi"}]
+        )
+        assert result == "Groq response"
+
+
+class TestOllamaLLMProviderInit:
+    @patch("app.services.llm_service.get_settings")
+    @patch("openai.AsyncOpenAI")
+    def test_constructor(self, mock_openai_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            ollama_base_url="http://localhost:11434", llm_model="llama3"
+        )
+        provider = OllamaLLMProvider()
+        assert provider.model_name == "llama3"
+
+    @pytest.mark.asyncio
+    @patch("app.services.llm_service.get_settings")
+    @patch("openai.AsyncOpenAI")
+    async def test_chat_completion(self, mock_openai_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            ollama_base_url="http://localhost:11434", llm_model="llama3"
+        )
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Ollama response"))]
+
+        import asyncio
+        future = asyncio.Future()
+        future.set_result(mock_response)
+        mock_client.chat.completions.create.return_value = future
+
+        provider = OllamaLLMProvider()
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "hi"}]
+        )
+        assert result == "Ollama response"

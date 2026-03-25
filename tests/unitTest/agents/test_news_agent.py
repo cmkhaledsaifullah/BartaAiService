@@ -133,6 +133,23 @@ class TestSummarizeSteps:
         assert result == []
 
 
+class TestCreateNewsAgent:
+    @patch("app.agents.news_agent.AgentExecutor")
+    @patch("app.agents.news_agent.create_tool_calling_agent")
+    @patch("app.agents.news_agent._create_langchain_llm")
+    @patch("app.agents.news_agent.get_settings", return_value=MagicMock(
+        llm_provider="openai", llm_model="gpt-4o", openai_api_key="fake", app_debug=False))
+    def test_creates_agent_executor(self, _, mock_llm, mock_create_agent, mock_executor_cls):
+        mock_llm.return_value = MagicMock()
+        mock_create_agent.return_value = MagicMock()
+        mock_executor_cls.return_value = MagicMock()
+
+        executor = create_news_agent()
+        assert executor is not None
+        mock_create_agent.assert_called_once()
+        mock_executor_cls.assert_called_once()
+
+
 class TestRunAgent:
     @pytest.mark.asyncio
     @patch("app.agents.news_agent.create_news_agent")

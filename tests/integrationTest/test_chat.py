@@ -81,11 +81,24 @@ async def test_chat_success(client):
 async def test_chat_empty_message(client):
     """Test chat rejects empty messages."""
     token = create_access_token(data={"sub": "user-123", "email": "test@example.com"})
-    response = await client.post(
-        "/api/v1/chat",
-        json={"message": ""},
-        headers={"Authorization": f"Bearer {token}"},
-    )
+
+    mock_user = {
+        "_id": "user-123",
+        "username": "testuser",
+        "email": "test@example.com",
+        "is_active": True,
+    }
+
+    with patch("app.auth.middleware.get_collection") as mock_auth_coll:
+        mock_auth_collection = AsyncMock()
+        mock_auth_collection.find_one = AsyncMock(return_value=mock_user)
+        mock_auth_coll.return_value = mock_auth_collection
+
+        response = await client.post(
+            "/api/v1/chat",
+            json={"message": ""},
+            headers={"Authorization": f"Bearer {token}"},
+        )
     assert response.status_code == 422
 
 
@@ -240,9 +253,22 @@ async def test_click_log_by_source_url_success(client):
 async def test_click_log_missing_identifiers(client):
     """Test click-log rejects requests missing both news_id and source_url."""
     token = create_access_token(data={"sub": "user-123", "email": "test@example.com"})
-    response = await client.post(
-        "/api/v1/chat/click-log",
-        json={"query": "test"},
-        headers={"Authorization": f"Bearer {token}"},
-    )
+
+    mock_user = {
+        "_id": "user-123",
+        "username": "testuser",
+        "email": "test@example.com",
+        "is_active": True,
+    }
+
+    with patch("app.auth.middleware.get_collection") as mock_auth_coll:
+        mock_auth_collection = AsyncMock()
+        mock_auth_collection.find_one = AsyncMock(return_value=mock_user)
+        mock_auth_coll.return_value = mock_auth_collection
+
+        response = await client.post(
+            "/api/v1/chat/click-log",
+            json={"query": "test"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
     assert response.status_code == 422

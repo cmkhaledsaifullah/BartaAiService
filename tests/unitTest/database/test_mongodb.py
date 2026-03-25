@@ -22,6 +22,7 @@ class TestConnectToMongodb:
         mock_settings.return_value = MagicMock(
             mongodb_uri="mongodb://localhost:27017",
             mongodb_db_name="test_db",
+            mongodb_tls_cert_key_file="",
         )
         mock_client = MagicMock()
         mock_client.admin.command = AsyncMock(return_value={"ok": 1})
@@ -34,6 +35,29 @@ class TestConnectToMongodb:
         mock_client.admin.command.assert_called_once_with("ping")
         assert mongodb_module._client is not None
         assert mongodb_module._database is not None
+
+    @pytest.mark.asyncio
+    @patch("app.database.mongodb.get_settings")
+    @patch("app.database.mongodb.AsyncIOMotorClient")
+    async def test_connect_with_tls_cert(self, mock_client_cls, mock_settings):
+        mock_settings.return_value = MagicMock(
+            mongodb_uri="mongodb+srv://cluster.mongodb.net",
+            mongodb_db_name="test_db",
+            mongodb_tls_cert_key_file="/path/to/cert.pem",
+        )
+        mock_client = MagicMock()
+        mock_client.admin.command = AsyncMock(return_value={"ok": 1})
+        mock_client.__getitem__ = MagicMock(return_value=MagicMock())
+        mock_client_cls.return_value = mock_client
+
+        await connect_to_mongodb()
+
+        mock_client_cls.assert_called_once_with(
+            "mongodb+srv://cluster.mongodb.net",
+            tls=True,
+            tlsCertificateKeyFile="/path/to/cert.pem",
+        )
+        assert mongodb_module._client is not None
 
 
 class TestCloseMongodb:
