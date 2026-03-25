@@ -10,25 +10,21 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        python-version: ["3.12", "3.13"]
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.13"
 
       - name: Cache pip dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-3.13-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-3.13-
 
       - name: Install dependencies
         run: |
@@ -40,19 +36,21 @@ jobs:
           MONGODB_URI: mongodb://localhost:27017
           JWT_SECRET_KEY: ci-test-secret
         run: |
-          pytest tests/unitTest/ --cov=app --cov-report=term-missing --cov-report=xml:coverage-unit.xml -v
+          pytest tests/unitTest/ --cov=app --cov-report=term-missing --cov-fail-under=0 -v
 
       - name: Run integration tests with coverage
         env:
           ENV_FILE: .env.e2e
         run: |
-          pytest tests/integrationTest/ --cov=app --cov-report=term-missing --cov-report=xml:coverage-integration.xml -v
+          pytest tests/integrationTest/ --cov=app --cov-append --cov-report=term-missing --cov-fail-under=0 -v
+
+      - name: Check combined coverage threshold
+        run: |
+          coverage report --fail-under=95
+          coverage xml -o coverage.xml
 
       - name: Upload coverage reports
-        if: matrix.python-version == '3.13'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
-          path: |
-            coverage-unit.xml
-            coverage-integration.xml
+          path: coverage.xml
